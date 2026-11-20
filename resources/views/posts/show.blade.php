@@ -22,6 +22,16 @@
 
         <div class="mt-8 flex flex-wrap items-start gap-4">
             <a href="{{ route('posts.edit', $post) }}" class="rounded-md border border-indigo-600 px-4 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-50">Modifier</a>
+
+            <details class="text-sm">
+                <summary class="cursor-pointer text-red-600 hover:underline">Supprimer cet article</summary>
+                <form method="POST" action="{{ route('posts.destroy', $post) }}" class="mt-3 rounded-md border border-red-200 bg-red-50 p-4 max-w-md">
+                    @csrf
+                    @method('DELETE')
+                    <p class="mb-3 text-gray-700">Cette action est définitive. Confirmez-vous la suppression de « {{ $post->title }} » ?</p>
+                    <button type="submit" class="rounded-md bg-red-600 px-4 py-2 font-medium text-white hover:bg-red-700">Confirmer la suppression</button>
+                </form>
+            </details>
         </div>
     </article>
 </x-layout>
