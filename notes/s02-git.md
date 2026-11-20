@@ -21,3 +21,19 @@ Réponse : Le dossier `vendor/` contient toutes les bibliothèques installées p
 ## 5. Git Credential Manager
 
 Réponse : Git Credential Manager (GCM) enregistre mon jeton d'authentification GitHub dans le Gestionnaire d'identification Windows, sous l'entrée `git:https://github.com`. Grâce à lui, je n'ai pas à retaper mon mot de passe à chaque `git push`. Sur mon ordinateur personnel, je peux le garder : les prochains pushes se feront sans reconnexion. Sur un poste de l'université, je dois le supprimer en fin de séance avec `cmdkey /delete:git:https://github.com`, sinon la personne suivante pourrait pousser sur mon dépôt en mon nom.
+
+## 6. Historique depuis lab-01
+
+Nombre de commits depuis lab-01 :
+
+6 avant ce dernier commit. Ils correspondent, du plus ancien au plus récent, aux notes Git de la session 02, à la page `/a-propos`, à sa capture, à la correction des captures de la session 01, au README du projet et au tableau des routes du défi.
+
+Fichiers modifiés depuis lab-01 :
+
+`README.md`, `notes/s02-git.md`, `resources/views/a-propos.blade.php`, `routes/web.php`, `screenshots/s01-accueil.png`, `screenshots/s01-bienvenue.png`, `screenshots/s01-route-list.png` et `screenshots/s02-a-propos.png`, soit 8 fichiers au total.
+
+Ce que git tag -n affiche pour lab-01 :
+
+`lab-01          lab-01`
+
+Le tag porte toujours le même message et le même commit : il n'a pas bougé pendant que la branche `main` avançait.
