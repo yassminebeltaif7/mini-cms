@@ -167,3 +167,5 @@ Ouvrir ensuite http://localhost:8000 (adresse de l'application, différente de l
 ![Modification d'un tag](screenshots/s10-tags-modification.png)
 
 ![Page Catégorie introuvable](screenshots/s10-categorie-introuvable.png)
+
+![Pagination en français](screenshots/s10-pagination-fr.png)

@@ -12,7 +12,7 @@
             @else
                 Brouillon
             @endif
-            - {{ $post->category?->name ?? 'Sans catégorie' }} - par {{ $post->user?->name ?? 'auteur inconnu' }}
+            - {{ $post->category?->name ?? 'Sans catégorie' }} - par {{ $post->user?->name ?? 'un auteur inconnu' }}
         </p>
 
         @if ($post->tags->isNotEmpty())

@@ -16,7 +16,7 @@
         @else
             Sans catégorie
         @endif
-        - par {{ $post->user?->name ?? 'auteur inconnu' }}
+        - par {{ $post->user?->name ?? 'un auteur inconnu' }}
     </p>
 
     <p class="text-sm text-gray-600">{{ $post->excerpt ?? Str::limit($post->body, 120) }}</p>
