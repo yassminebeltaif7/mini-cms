@@ -182,3 +182,20 @@ Ouvrir ensuite http://localhost:8000 (adresse de l'application, différente de l
 ![Barre de navigation d'un utilisateur connecté, avec le message « Vous êtes connecté. »](screenshots/s11-connexion.png)
 
 ![Page 403 quand un auteur ouvre la modification de l'article d'un autre auteur](screenshots/s11-interdit.png)
+
+## Comparaison avec le starter kit Livewire
+
+| Critère | Mini-CMS (authentification manuelle) | Starter kit Livewire |
+|---|---|---|
+| Routes d'authentification | `routes/web.php` : `/inscription`, `/connexion` et `/deconnexion` déclarées à la main | Routes enregistrées par Fortify depuis son paquet ; absentes de `routes/web.php` |
+| Inscription | `app/Http/Controllers/Auth/RegisterController.php` | `app/Actions/Fortify/CreateNewUser.php` et `resources/views/pages/auth/register.blade.php` |
+| Connexion | `app/Http/Controllers/Auth/LoginController.php` (`Auth::attempt`, `regenerate`) | Contrôleur de Fortify et `resources/views/pages/auth/login.blade.php` |
+| Déconnexion | `app/Http/Controllers/Auth/LoginController.php` (`logout`, `invalidate`, `regenerateToken`) | Route `logout` de Fortify ; les mêmes trois opérations dans `app/Livewire/Actions/Logout.php` |
+| Limitation des tentatives | `routes/web.php` : aucune | 5 tentatives par minute par e-mail et adresse IP (`app/Providers/FortifyServiceProvider.php`) |
+| Mot de passe oublié | `routes/web.php` : aucune route | `Features::resetPasswords()` dans `config/fortify.php` |
+| Vérification de l'e-mail | `app/Models/User.php` : absente, `MustVerifyEmail` n'est pas utilisé | `Features::emailVerification()`, `MustVerifyEmail` sur `User`, middleware `verified` sur `/dashboard` |
+| Double authentification | `app/Models/User.php` : absente, comme les passkeys | `Features::twoFactorAuthentication()` et `Features::passkeys()` |
+| Rôles et autorisations | `app/Models/User.php` (colonne `role`), `app/Providers/AppServiceProvider.php` (Gates), `app/Policies/PostPolicy.php` et `app/Http/Middleware/EnsureUserIsAdmin.php` | Aucun : à écrire soi-même |
+| Tests | `tests/Feature/AuthTest.php`, `tests/Feature/AuthorizationTest.php`, `tests/Feature/AdminAccessTest.php` et `tests/Feature/PostVisibilityTest.php` | 10 fichiers dans `tests/Feature` (Auth, Settings, Dashboard), écrits avec PHPUnit dans le dépôt |
+
+Ce que je garderais du kit dans un vrai projet : ses fonctionnalités d'authentification (limitation des tentatives, mot de passe oublié, vérification de l'e-mail, double authentification et passkeys) et ses écrans Livewire/Flux, qui évitent de réécrire beaucoup de code. Je continuerais à écrire moi-même les rôles, les Gates et les Policies, tout en gardant visible la logique de `app/Http/Controllers/Auth/LoginController.php` (`regenerate`, `invalidate`, `regenerateToken`) pour comprendre la sécurité.
