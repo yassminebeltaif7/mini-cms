@@ -1,107 +1,138 @@
 # Mini-CMS
 
-Projet fil rouge de l'Atelier Framework Côté Serveur (Laravel 13, PHP 8.3+), 3e année MDW, ISET Sidi Bouzid.
+## Description
+
+Mini-CMS est le projet fil rouge de l'Atelier Framework Côté Serveur (Laravel 13, PHP 8.3+, ISET Sidi Bouzid, 3e année MDW). Il comprend un site public de publication, un back-office authentifié, une API JSON protégée par jetons Sanctum et une suite de tests Pest. Livrable final : tag `lab-08b`, dépôt `mini-cms`.
 
 Auteur : Yasmine Beltaif, groupe MDW32.
 
-Mini-CMS évoluera au fil du semestre vers une petite plateforme de publication : pages publiques, back-office authentifié, API JSON et tests Pest. Chaque session se termine par un tag Git (`lab-01`, `lab-01b`, puis un tag par session).
+## Fonctionnalités
 
-## État actuel (tag lab-08)
+- Pages publiques : accueil, à propos, heure, liste des articles, archives par année, filtres par catégorie et par tag.
+- Back-office : création, modification, suppression et publication des articles ; gestion des catégories et des tags ; gestion des rôles des utilisateurs.
+- Authentification manuelle : inscription, connexion, déconnexion, limitation des droits par rôle et `PostPolicy`.
+- API JSON : lecture paginée des articles, des catégories et des tags ; filtres `?category=` et `?tag=` ; connexion par jeton, déconnexion et écritures protégées.
+- Conventions : Form Requests, Policies, API Resources, chargement anticipé (`with`, `withCount`, `whenLoaded`, `whenCounted`) et contrôleurs légers.
+- Tests Pest : `php artisan test` entièrement vert, y compris `ApiReadTest` et `ApiWriteTest`.
 
-- `GET /api/categories` et `GET /api/categories/{category}`, avec le nombre d'articles publiés de chaque catégorie.
-- `GET /api/posts?category=<slug>&tag=<slug>` : filtres par catégorie et par tag, comparaison exacte, slug inconnu refusé (422).
-- `POST /api/login` renvoie un jeton Sanctum ; `POST /api/logout` le révoque.
-- `POST`, `PUT/PATCH` et `DELETE /api/posts` protégés par `auth:sanctum`, avec les mêmes Form Requests et la même `PostPolicy` que le site (401, 403 et 422 en JSON).
-- Tests Pest `ApiReadTest` et `ApiWriteTest`.
+Comparaison avec le starter kit Livewire :
 
-## Routes disponibles
+| Critère | Mini-CMS (authentification manuelle) | Starter kit Livewire |
+|---|---|---|
+| Routes d'authentification | `routes/web.php` : `/inscription`, `/connexion` et `/deconnexion` déclarées à la main | Routes enregistrées par Fortify depuis son paquet ; absentes de `routes/web.php` |
+| Inscription | `app/Http/Controllers/Auth/RegisterController.php` | `app/Actions/Fortify/CreateNewUser.php` et `resources/views/pages/auth/register.blade.php` |
+| Connexion | `app/Http/Controllers/Auth/LoginController.php` (`Auth::attempt`, `regenerate`) | Contrôleur de Fortify et `resources/views/pages/auth/login.blade.php` |
+| Déconnexion | `app/Http/Controllers/Auth/LoginController.php` (`logout`, `invalidate`, `regenerateToken`) | Route `logout` de Fortify ; les mêmes trois opérations dans `app/Livewire/Actions/Logout.php` |
+| Limitation des tentatives | `routes/web.php` : aucune | 5 tentatives par minute par e-mail et adresse IP (`app/Providers/FortifyServiceProvider.php`) |
+| Mot de passe oublié | `routes/web.php` : aucune route | `Features::resetPasswords()` dans `config/fortify.php` |
+| Vérification de l'e-mail | `app/Models/User.php` : absente, `MustVerifyEmail` n'est pas utilisé | `Features::emailVerification()`, `MustVerifyEmail` sur `User`, middleware `verified` sur `/dashboard` |
+| Double authentification | `app/Models/User.php` : absente, comme les passkeys | `Features::twoFactorAuthentication()` et `Features::passkeys()` |
+| Rôles et autorisations | `app/Models/User.php` (colonne `role`), `app/Providers/AppServiceProvider.php` (Gates), `app/Policies/PostPolicy.php` et `app/Http/Middleware/EnsureUserIsAdmin.php` | Aucun : à écrire soi-même |
+| Tests | `tests/Feature/AuthTest.php`, `tests/Feature/AuthorizationTest.php`, `tests/Feature/AdminAccessTest.php`, `tests/Feature/PostVisibilityTest.php`, `tests/Feature/ApiReadTest.php` et `tests/Feature/ApiWriteTest.php` | 10 fichiers dans `tests/Feature` (Auth, Settings, Dashboard), écrits avec PHPUnit dans le dépôt |
 
-| Méthode | URI | Nom | Action |
-|---|---|---|---|
-| GET | `/` | `home` | `PageController@home` |
-| GET | `/a-propos` | `about` | `PageController@about` |
-| GET | `/heure` | `time` | `PageController@time` |
-| GET | `/posts` | `posts.index` | `PostController@index` |
-| GET | `/posts/archive/{year}` | `posts.archive` | `PostController@archive` |
-| GET | `/posts/categorie/{category:slug}` | `posts.category` | `PostController@byCategory` |
-| GET | `/posts/tag/{tag:slug}` | `posts.tag` | `PostController@byTag` |
-| GET | `/posts/create` | `posts.create` | `PostController@create` |
-| POST | `/posts` | `posts.store` | `PostController@store` |
-| GET | `/posts/{post}` | `posts.show` | `PostController@show` |
-| GET | `/posts/{post}/edit` | `posts.edit` | `PostController@edit` |
-| PUT | `/posts/{post}` | `posts.update` | `PostController@update` |
-| DELETE | `/posts/{post}` | `posts.destroy` | `PostController@destroy` |
-| PATCH | `/posts/{post}/publication` | `posts.publication` | `PostController@togglePublication` |
-| GET | `/admin/categories` | `admin.categories.index` | `CategoryController@index` |
-| GET | `/admin/categories/create` | `admin.categories.create` | `CategoryController@create` |
-| POST | `/admin/categories` | `admin.categories.store` | `CategoryController@store` |
-| GET | `/admin/categories/{category}/edit` | `admin.categories.edit` | `CategoryController@edit` |
-| PUT | `/admin/categories/{category}` | `admin.categories.update` | `CategoryController@update` |
-| DELETE | `/admin/categories/{category}` | `admin.categories.destroy` | `CategoryController@destroy` |
-| GET | `/admin/tags` | `admin.tags.index` | `TagController@index` |
-| GET | `/admin/tags/create` | `admin.tags.create` | `TagController@create` |
-| POST | `/admin/tags` | `admin.tags.store` | `TagController@store` |
-| GET | `/admin/tags/{tag}/edit` | `admin.tags.edit` | `TagController@edit` |
-| PUT | `/admin/tags/{tag}` | `admin.tags.update` | `TagController@update` |
-| DELETE | `/admin/tags/{tag}` | `admin.tags.destroy` | `TagController@destroy` |
-| GET | `/inscription` | `register` | `Auth\RegisterController@create` |
-| POST | `/inscription` | `register.store` | `Auth\RegisterController@store` |
-| GET | `/connexion` | `login` | `Auth\LoginController@create` |
-| POST | `/connexion` | `login.store` | `Auth\LoginController@store` |
-| POST | `/deconnexion` | `logout` | `Auth\LoginController@destroy` |
-| GET | `/admin/utilisateurs` | `admin.users.index` | `Admin\UserController@index` |
-| PATCH | `/admin/utilisateurs/{user}/role` | `admin.users.role` | `Admin\UserController@updateRole` |
-| GET | `/api/posts` | `api.posts.index` | `Api\PostController@index` |
-| GET | `/api/posts/{post}` | `api.posts.show` | `Api\PostController@show` |
-| GET | `/api/categories` | `api.categories.index` | `Api\CategoryController@index` |
-| GET | `/api/categories/{category}` | `api.categories.show` | `Api\CategoryController@show` |
-| POST | `/api/login` | `api.login` | `Api\AuthController@login` |
-| POST | `/api/logout` | `api.logout` | `Api\AuthController@logout` |
-| POST | `/api/posts` | `api.posts.store` | `Api\PostController@store` |
-| PUT/PATCH | `/api/posts/{post}` | `api.posts.update` | `Api\PostController@update` |
-| DELETE | `/api/posts/{post}` | `api.posts.destroy` | `Api\PostController@destroy` |
-
-## Données de démonstration
-
-Après un clone, reconstruire la base avec `php artisan migrate:fresh --seed`. Attention : cette commande vide la base avant de la remplir.
-
-## Prérequis
-
-- PHP et Composer (PHP 8.3 ou plus depuis https://www.php.net/downloads, avec les extensions curl, fileinfo, mbstring, openssl, pdo_sqlite, sqlite3 et zip activées dans php.ini, et Composer depuis https://getcomposer.org).
-- Node.js LTS et npm.
-- Git.
+Ce que je garderais du kit dans un vrai projet : ses fonctionnalités d'authentification (limitation des tentatives, mot de passe oublié, vérification de l'e-mail, double authentification et passkeys) et ses écrans Livewire/Flux, qui évitent de réécrire beaucoup de code. Je continuerais à écrire moi-même les rôles, les Gates et les Policies, tout en gardant visible la logique de `app/Http/Controllers/Auth/LoginController.php` (`regenerate`, `invalidate`, `regenerateToken`) pour comprendre la sécurité.
 
 ## Installation
 
-### Bash (Git Bash, macOS, Linux)
+Prérequis : PHP 8.3 ou plus avec les extensions curl, fileinfo, mbstring, openssl, pdo_sqlite, sqlite3 et zip ; Composer 2 ; Node.js LTS et npm ; Git. La base utilise SQLite.
+
+### Bash
 
 ```bash
 git clone https://github.com/yassminebeltaif7/mini-cms.git
 cd mini-cms
 composer install
 npm install
+npm run build
 cp .env.example .env
 php artisan key:generate
 touch database/database.sqlite
-php artisan migrate
+php artisan migrate:fresh --seed
+php artisan test
 composer run dev
 ```
 
-### PowerShell (Windows)
+### PowerShell
 
 ```powershell
 git clone https://github.com/yassminebeltaif7/mini-cms.git
 cd mini-cms
 composer install
 npm install
+npm run build
 copy .env.example .env
 php artisan key:generate
 New-Item database\database.sqlite -ItemType File
-php artisan migrate
+php artisan migrate:fresh --seed
+php artisan test
 composer run dev
 ```
 
-Ouvrir ensuite http://localhost:8000 (adresse de l'application, différente de l'adresse de Vite sur le port 5173).
+`php artisan migrate:fresh --seed` vide la base avant de la remplir. Ouvrir ensuite http://localhost:8000 (adresse de l'application, différente de l'adresse de Vite sur le port 5173). `http://localhost:8000/api/posts` renvoie la liste des articles en JSON.
+
+## Comptes de test
+
+Le seeder crée un administrateur et deux auteurs. Le mot de passe est `password` pour les trois comptes.
+
+- Administrateur : `test@example.com` / `password`.
+- Auteurs : deux comptes créés par `User::factory(2)` ; leurs adresses sont générées par Faker. Après `migrate:fresh --seed`, les afficher avec :
+
+```powershell
+php artisan tinker --execute="dump(App\Models\User::where('role','author')->pluck('email'));"
+```
+
+Un compte auteur permet de vérifier le 403 sur l'article d'un autre auteur.
+
+## API
+
+### Endpoints
+
+| Méthode | URI | Accès | Description |
+|---|---|---|---|
+| GET | `/api/posts` | public | Articles publiés, paginés ; filtres `?per_page=`, `?category=<slug>` et `?tag=<slug>` |
+| GET | `/api/posts/{post}` | public | Un article publié ; 403 pour un brouillon, 404 si inexistant |
+| GET | `/api/categories` | public | Catégories avec leur nombre d'articles publiés |
+| GET | `/api/categories/{category}` | public | Une catégorie avec son nombre d'articles publiés |
+| GET | `/api/tags` | public | Tags avec leur nombre d'articles publiés |
+| GET | `/api/tags/{tag}` | public | Un tag avec son nombre d'articles publiés |
+| POST | `/api/login` | public | Connexion ; renvoie un jeton Sanctum |
+| POST | `/api/logout` | jeton | Révoque le jeton courant ; 204 |
+| GET | `/api/user` | jeton | Utilisateur authentifié |
+| POST | `/api/posts` | jeton | Créer un article ; le propriétaire est l'utilisateur connecté ; 201 |
+| PUT/PATCH | `/api/posts/{post}` | jeton + Policy | Modifier son article ; 200, 403 pour celui d'un autre auteur |
+| DELETE | `/api/posts/{post}` | jeton + Policy | Supprimer son article ; 204 |
+
+Les réponses passent par `PostResource`, `CategoryResource` et `TagResource` : une clé `data`, des dates ISO 8601, ni e-mail ni rôle des auteurs. Les listes paginées ajoutent `links` et `meta`.
+
+### Authentification par jeton
+
+`POST /api/login` avec `{"email":"...","password":"..."}` renvoie `{"token":"..."}` avec le statut 201. Le jeton s'envoie ensuite dans chaque requête protégée :
+
+```text
+Authorization: Bearer VOTRE_JETON
+Accept: application/json
+```
+
+`POST /api/logout` révoque uniquement le jeton utilisé pour la requête. Après révocation, une requête protégée avec le même jeton renvoie 401. La collection Postman du défi de la session 14 est dans `docs/postman/mini-cms.postman_collection.json` : sa requête « Connexion » enregistre le jeton dans la variable `token`, qui reste vide dans le fichier exporté.
+
+### Codes d'erreur
+
+| Code | Corps | Situation |
+|---|---|---|
+| 401 | `{"message":"Unauthenticated."}` | Jeton absent, révoqué ou invalide sur une route protégée |
+| 403 | `{"message":"This action is unauthorized."}` | Modification ou suppression de l'article d'un autre auteur ; brouillon demandé par un visiteur |
+| 404 | `{"message":"No query results for model [...] "}` | Identifiant d'article, de catégorie ou de tag inconnu |
+| 422 | `{"message":"...","errors":{...}}` | Corps invalide ou filtre inconnu ; les messages de validation sont en français |
+
+L'ordre des contrôles est 401 (jeton), puis 403 (autorisation dans la Form Request ou la Policy), puis 422 (validation). Les erreurs sont toujours JSON grâce à l'en-tête `Accept: application/json`.
+
+### Exemple curl.exe
+
+```powershell
+curl.exe -X POST -H "Accept: application/json" -H "Authorization: Bearer VOTRE_JETON" http://localhost:8000/api/logout
+```
+
+La réponse 204 n'a pas de corps : la commande n'affiche donc rien. Remplacer `VOTRE_JETON` par le jeton obtenu avec la requête de connexion dans Postman ; ne jamais committer un vrai jeton.
 
 ## Captures d'écran
 
@@ -211,19 +242,16 @@ Ouvrir ensuite http://localhost:8000 (adresse de l'application, différente de l
 
 ![Postman : PUT sur l'article d'un autre auteur, réponse 403](screenshots/s14-postman-403.png)
 
-## Comparaison avec le starter kit Livewire
+## Choix d'architecture
 
-| Critère | Mini-CMS (authentification manuelle) | Starter kit Livewire |
-|---|---|---|
-| Routes d'authentification | `routes/web.php` : `/inscription`, `/connexion` et `/deconnexion` déclarées à la main | Routes enregistrées par Fortify depuis son paquet ; absentes de `routes/web.php` |
-| Inscription | `app/Http/Controllers/Auth/RegisterController.php` | `app/Actions/Fortify/CreateNewUser.php` et `resources/views/pages/auth/register.blade.php` |
-| Connexion | `app/Http/Controllers/Auth/LoginController.php` (`Auth::attempt`, `regenerate`) | Contrôleur de Fortify et `resources/views/pages/auth/login.blade.php` |
-| Déconnexion | `app/Http/Controllers/Auth/LoginController.php` (`logout`, `invalidate`, `regenerateToken`) | Route `logout` de Fortify ; les mêmes trois opérations dans `app/Livewire/Actions/Logout.php` |
-| Limitation des tentatives | `routes/web.php` : aucune | 5 tentatives par minute par e-mail et adresse IP (`app/Providers/FortifyServiceProvider.php`) |
-| Mot de passe oublié | `routes/web.php` : aucune route | `Features::resetPasswords()` dans `config/fortify.php` |
-| Vérification de l'e-mail | `app/Models/User.php` : absente, `MustVerifyEmail` n'est pas utilisé | `Features::emailVerification()`, `MustVerifyEmail` sur `User`, middleware `verified` sur `/dashboard` |
-| Double authentification | `app/Models/User.php` : absente, comme les passkeys | `Features::twoFactorAuthentication()` et `Features::passkeys()` |
-| Rôles et autorisations | `app/Models/User.php` (colonne `role`), `app/Providers/AppServiceProvider.php` (Gates), `app/Policies/PostPolicy.php` et `app/Http/Middleware/EnsureUserIsAdmin.php` | Aucun : à écrire soi-même |
-| Tests | `tests/Feature/AuthTest.php`, `tests/Feature/AuthorizationTest.php`, `tests/Feature/AdminAccessTest.php` et `tests/Feature/PostVisibilityTest.php` | 10 fichiers dans `tests/Feature` (Auth, Settings, Dashboard), écrits avec PHPUnit dans le dépôt |
+### Pourquoi les écritures de l'API passent par PostPolicy
 
-Ce que je garderais du kit dans un vrai projet : ses fonctionnalités d'authentification (limitation des tentatives, mot de passe oublié, vérification de l'e-mail, double authentification et passkeys) et ses écrans Livewire/Flux, qui évitent de réécrire beaucoup de code. Je continuerais à écrire moi-même les rôles, les Gates et les Policies, tout en gardant visible la logique de `app/Http/Controllers/Auth/LoginController.php` (`regenerate`, `invalidate`, `regenerateToken`) pour comprendre la sécurité.
+La même règle décide qui peut modifier ou supprimer un article, que la demande vienne du site ou de l'API. Si le propriétaire change, ou si un administrateur doit être autorisé, je ne modifie qu'un seul fichier. L'API ne devient pas un raccourci qui contourne les droits du site. La Form Request appelle la Policy dans `authorize()`, donc un utilisateur non autorisé reçoit 403 avant la validation des données : l'ordre 401, 403, 422 reste stable.
+
+### Pourquoi preventLazyLoading est activé
+
+Une relation lue dans une boucle sans chargement anticipé produit une requête supplémentaire par article : c'est le problème N+1. En développement, `preventLazyLoading(! app()->isProduction())` transforme cette lenteur silencieuse en erreur visible. Les listes chargent donc explicitement `user`, `category` et `tags` avec `with()`, et les `whenLoaded()` de la Resource ne lisent que ces relations déjà présentes. L'option reste désactivée en production pour ne pas casser le site.
+
+### Pourquoi l'API utilise des jetons et non la session
+
+Le groupe `api` n'a ni session ni cookie. Un client qui n'est pas un navigateur — script, application mobile ou Postman — présente donc un jeton à chaque requête dans l'en-tête `Authorization: Bearer`. Le site garde son cookie de session pour le navigateur. Un jeton peut être révoqué seul avec `/api/logout`, sans déconnecter les autres appareils de l'utilisateur.
