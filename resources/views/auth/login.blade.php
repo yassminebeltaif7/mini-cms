@@ -22,6 +22,13 @@
             @enderror
         </div>
 
+        <div>
+            <label class="inline-flex items-center">
+                <input type="checkbox" name="remember" value="1" class="rounded border-gray-300 text-indigo-600">
+                <span class="ml-2 text-sm text-gray-700">Se souvenir de moi</span>
+            </label>
+        </div>
+
         <button type="submit" class="rounded-md bg-indigo-600 px-5 py-2.5 font-medium text-white hover:bg-indigo-700">Se connecter</button>
 
         <p class="text-sm text-gray-600">
